@@ -8,6 +8,12 @@ form {
   width: 100%;
 }
 
+.search-books {
+  font-weight: 500;
+  color: $gray80;
+  margin-bottom: $spacing-xs;
+}
+
 .book-grid {
   display: grid;
   grid-template-columns: 50% 50%;
@@ -68,5 +74,16 @@ form {
   justify-content: center;
   min-height: 50vh;
   font-size: 1.5rem;
-  color: $gray40;
+  color: $gray60;
+  .btn-link{
+    border: 0;
+    background: none;
+    color: $pink-accent;
+    cursor: pointer;
+  }
+}
+
+.errMsg {
+  color: $pink-dark;
+  font-weight: bold;
 }
