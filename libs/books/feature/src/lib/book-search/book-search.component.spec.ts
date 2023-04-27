@@ -8,22 +8,28 @@ import {
   clearSearch,
   getAllBooks,
   getBooksError,
-  getBooksLoaded,
+  getBooksLoaded, removeFromReadingList,
   searchBooks
 } from "@tmo/books/data-access";
 import { BooksFeatureModule } from '@tmo/books/feature'
 import { BookSearchComponent } from './book-search.component';
+import {OverlayContainer} from "@angular/cdk/overlay";
 
 describe('ProductsListComponent', () => {
   let component: BookSearchComponent;
   let fixture: ComponentFixture<BookSearchComponent>;
   let store: MockStore;
+  let overlayContainer: OverlayContainer;
+  let overlayContainerElement: HTMLElement;
+  let dispatchSpy;
   beforeEach(async(() => {
     TestBed.configureTestingModule({
       imports: [BooksFeatureModule, NoopAnimationsModule, SharedTestingModule],
       providers: [provideMockStore({ initialState: { books: { entities: [] } } }),]
     }).compileComponents();
     store = TestBed.inject(MockStore);
+    overlayContainer = TestBed.inject(OverlayContainer);
+    overlayContainerElement = overlayContainer.getContainerElement();
   }));
 
   beforeEach(() => {
@@ -31,7 +37,7 @@ describe('ProductsListComponent', () => {
     component = fixture.componentInstance;
     store.overrideSelector(getAllBooks, []);
     store.overrideSelector(getBooksError, null);
-    spyOn(store, 'dispatch').and.callThrough();
+    dispatchSpy = spyOn(store, 'dispatch').and.callThrough();
     fixture.detectChanges();
   });
   afterEach(() => {
@@ -83,5 +89,13 @@ describe('ProductsListComponent', () => {
     expect(store.dispatch).toHaveBeenCalledWith(
       clearSearch()
     );
+  });
+  it('should trigger snackBar to undo the addReadList', () => {
+    const book: Book = createBook('B');
+    component.addBookToReadingList(book);
+    expect(store.dispatch).toHaveBeenCalledWith(addToReadingList({ book }));
+    const buttonElement: HTMLElement = overlayContainerElement.querySelector('.mat-simple-snackbar-action > button');
+    buttonElement?.click();
+    expect(dispatchSpy).toHaveBeenCalledWith(removeFromReadingList({item: {...book, bookId: 'B'}}));
   });
 });
