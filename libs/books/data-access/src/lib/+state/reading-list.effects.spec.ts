@@ -4,7 +4,7 @@ import { provideMockActions } from '@ngrx/effects/testing';
 import { provideMockStore } from '@ngrx/store/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
 
-import { SharedTestingModule } from '@tmo/shared/testing';
+import {createReadingListItem, SharedTestingModule} from '@tmo/shared/testing';
 import { ReadingListEffects } from './reading-list.effects';
 import * as ReadingListActions from './reading-list.actions';
 
@@ -41,5 +41,38 @@ describe('ToReadEffects', () => {
 
       httpMock.expectOne('/api/reading-list').flush([]);
     });
+
+    it('should check confirmedMarkAsRead has been invoked when markAsRead gets success', done => {
+      actions = new ReplaySubject();
+      const item = createReadingListItem('A');
+      actions.next(ReadingListActions.markedAsRead({ item }));
+
+      effects.markedAsRead$.subscribe(action => {
+        expect(action).toEqual(
+          ReadingListActions.confirmedMarkAsRead({
+            item
+          })
+        );
+        done();
+      });
+
+      httpMock.expectOne('/api/reading-list/A/finished').flush(item);
+    });
+
+    it('should check failedMarkAsRead has been invoked when markAsRead gets failed', done => {
+      actions = new ReplaySubject();
+      const item = createReadingListItem('B');
+      actions.next(ReadingListActions.markedAsRead({ item }));
+
+      effects.markedAsRead$.subscribe(action => {
+        expect(action).toEqual(
+          ReadingListActions.failedMarkAsRead({ item })
+        );
+        done();
+      });
+
+      httpMock.expectOne('/api/reading-list/B/finished').error(new ErrorEvent('Error'));
+    });
+
   });
 });
