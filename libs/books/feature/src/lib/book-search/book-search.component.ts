@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
 import { Store } from '@ngrx/store';
 import {
   addToReadingList,
@@ -8,17 +8,20 @@ import {
 } from '@tmo/books/data-access';
 import { FormBuilder } from '@angular/forms';
 import { Book } from '@tmo/shared/models';
+import {of, Subscription} from "rxjs";
+import {debounceTime, distinctUntilChanged, switchMap} from "rxjs/operators";
 
 @Component({
   selector: 'tmo-book-search',
   templateUrl: './book-search.component.html',
   styleUrls: ['./book-search.component.scss']
 })
-export class BookSearchComponent implements OnInit {
+export class BookSearchComponent implements OnInit, OnDestroy {
   readonly spinner$ = this.store.select(getSpinner);
   readonly getAllBooks$ = this.store.select(getAllBooks);
   readonly getBooksError$ = this.store.select(getBooksError);
   readonly getBooksLoaded$ = this.store.select(getBooksLoaded);
+  booksSearchSubscription$: Subscription;
 
   searchForm = this.fb.group({
     term: ''
@@ -34,9 +37,14 @@ export class BookSearchComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.searchForm.get("term").valueChanges.subscribe(newVal => {
-      if(!newVal) this.store.dispatch(clearSearch())
-    });
+    this.booksSearchSubscription$ = this.searchForm.get("term").valueChanges.pipe(debounceTime(500), distinctUntilChanged(),
+      switchMap(val => of(val))).subscribe(newVal => {
+      if (newVal) {
+        this.store.dispatch(searchBooks({ term: newVal }));
+      } else {
+        this.store.dispatch(clearSearch());
+      }
+    })
   }
 
   formatDate(date: void | string) {
@@ -51,14 +59,10 @@ export class BookSearchComponent implements OnInit {
 
   searchExample() {
     this.searchForm.controls.term.setValue('javascript');
-    this.searchBooks();
   }
 
-  searchBooks() {
-    if (this.searchTerm) {
-      this.store.dispatch(searchBooks({ term: this.searchTerm }));
-    } else {
-      this.store.dispatch(clearSearch());
-    }
+  ngOnDestroy() {
+    this.booksSearchSubscription$?.unsubscribe();
   }
+
 }
